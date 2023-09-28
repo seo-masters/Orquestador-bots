@@ -35,7 +35,10 @@ El código se divide en las siguientes secciones principales:
 
 ## Diagrama
 
-No se proporciona un diagrama en este código.
+A continuación se muestra un diagrama que representa la estructura del flujo de datos en el código:
+
+![Diagrama de Flujo](Diagrama.png)
+
 
 ## Notas Adicionales
 
