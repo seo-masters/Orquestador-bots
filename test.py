@@ -327,3 +327,35 @@
 # ventana_principal.mainloop()
 
 # -------------------------------------------------------------------------------------------------------------- Ejecucion en cola
+
+
+import tkinter as tk
+from tkinter import ttk
+
+def actualizar_seleccion():
+    seleccionados = lista_dias.curselection()
+    for i in range(len(dias_semana)):
+        lista_dias.itemconfig(i, {'bg': 'white'})  # Reiniciar el color de fondo
+    for indice in seleccionados:
+        lista_dias.itemconfig(indice, {'bg': 'lightblue'})  # Cambiar el color de fondo de los seleccionados
+
+dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+
+ventana = tk.Tk()
+ventana.title("Seleccionar Días")
+
+marco = ttk.Frame(ventana)
+marco.grid(row=0, column=0)
+
+etiqueta_lista = ttk.Label(marco, text="Selecciona uno o más días de la semana:")
+etiqueta_lista.grid(row=0, column=0, padx=10, pady=5)
+
+lista_dias = tk.Listbox(marco, selectmode=tk.MULTIPLE)
+for dia in dias_semana:
+    lista_dias.insert(tk.END, dia)
+lista_dias.grid(row=1, column=0, padx=10, pady=5)
+
+boton_actualizar = ttk.Button(marco, text="Actualizar Selección", command=actualizar_seleccion)
+boton_actualizar.grid(row=2, column=0, padx=10, pady=5)
+
+ventana.mainloop()

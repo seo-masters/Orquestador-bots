@@ -19,11 +19,13 @@ def init_db():
         path TEXT NOT NULL,
         status TEXT NOT NULL,
         interval INTEGER NOT NULL,
-        l INTEGER NOT NULL,
-        m INTEGER NOT NULL,
-        x INTEGER NOT NULL,
-        j INTEGER NOT NULL,
-        v INTEGER NOT NULL,
+        lunes INTEGER NOT NULL,
+        martes INTEGER NOT NULL,
+        miercoles INTEGER NOT NULL,
+        jueves INTEGER NOT NULL,
+        viernes INTEGER NOT NULL,
+        sabado INTEGER NOT NULL,
+        domingo INTEGER NOT NULL,
         last_run TEXT
     );
     ''')
@@ -32,44 +34,100 @@ def init_db():
 
     return cursor
 # creacion de bot base
-def nuevo_bot(cursor,ventana_principal):
+def nuevo_bot(cursor,container):
 
     id = len(tarjetas) + 1
 
     cursor.execute('''
-    INSERT INTO bots (name, path, status, interval, l, m, x, j, v, last_run)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (f'Nuevo Bot {id}','c:/','active', 0, 0, 0, 0, 0, 0, "Sin ejecucion"))
+    INSERT INTO bots (name, path, status, interval, lunes, martes, miercoles, jueves, viernes, sabado, domingo, last_run)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (f'Nuevo Bot {id}','c:/','active', 0, 0, 0, 0, 0, 0, 0, 0, "Sin ejecucion"))
 
     cursor.connection.commit()
 
-    getAll(cursor,ventana_principal)
+    getAll(cursor,container)
 # recuperar todo los datos
-def getAll(cursor, ventana_principal):
+def getAll(cursor, container):
     global tarjetas
+    
+    # Borra todos los widgets hijos de la ventana principal
+    for widget in container.winfo_children():
+        widget.destroy()
+
     cursor.execute('SELECT * FROM bots')
     tarjetas = cursor.fetchall()
 
+    print(tarjetas)
+
     for bot in tarjetas:
-        boton_tarjeta = ttk.Button(ventana_principal, text=bot[1], command=lambda id=bot[0], nombre=bot[1]: abrir_tarjeta(cursor, id, nombre))
+        boton_tarjeta = ttk.Button(container, text=bot[1], command=lambda id=bot[0], nombre=bot[1]: abrir_tarjeta(cursor, id, nombre))
         boton_tarjeta.pack(expand=True, fill="both")
 
-def actualizar_datos(cursor,id,nombre_tarjeta,campo_input,dias_semana,lista_dias,estado_var,campo_ruta_archivo):
-    intervalo = campo_input.get()
+def verificar_dias(cursor,lista_dias,dias_semana,id):
+
+    cursor.execute('''
+            SELECT lunes, martes, miercoles, jueves, viernes, sabado, domingo
+            FROM bots
+            WHERE id = ?
+        ''', (id,)) 
+    
+    valores = cursor.fetchall()
+
+    actualizar_seleccion(lista_dias,dias_semana,valores[0])
+
+def reset_dias(cursor,lista_dias,dias_semana,id):
+    for dia in dias_semana:
+        diaUpdate = dia.lower()
+
+        cursor.execute(f'''
+        UPDATE bots
+        SET {diaUpdate} = ?
+        WHERE id= ?
+        ''', (0,id))
+
+        cursor.connection.commit()
+    
+    verificar_dias(cursor,lista_dias,dias_semana,id)
+
+def actualizar_datos(cursor,id,new_name,campo_input,dias_semana,lista_dias,estado_var,campo_ruta_archivo,ventana_principal):
+    new_interval = campo_input.get()
     dias_seleccionados = [dias_semana[i] for i in lista_dias.curselection()]
-    estado = "Activo" if estado_var.get() else "Inactivo"
-    archivo_ruta = campo_ruta_archivo.get()  # Obtiene la ruta del archivo
+    new_status = "Activo" if estado_var.get() else "Inactivo"
+    new_path = campo_ruta_archivo.get()  # Obtiene la ruta del archivo
 
-    # Imprimir datos en la consola, incluyendo la ruta del archivo
-    print(f"ID: {id}")
-    print(f"Nombre de la Tarjeta: {nombre_tarjeta}")
-    print(f"Intervalo (Minutos): {intervalo}")
-    print(f"Días seleccionados: {', '.join(dias_seleccionados)}")
-    print(f"Estado: {estado}")
-    print(f"Ruta del Archivo: {archivo_ruta}")
+    try:
 
-    # Mostrar ventana emergente de confirmación
-    messagebox.showinfo("Confirmación", "Datos impresos en la consola.\n¡Confirmación exitosa!")
+
+        print(dias_seleccionados)
+
+        for dia in dias_seleccionados:
+            diaUpdate = dia.lower()
+
+            cursor.execute(f'''
+            UPDATE bots
+            SET {diaUpdate} = ?
+            WHERE id= ?
+            ''', (1,id))
+
+        
+        cursor.execute('''
+        UPDATE bots
+        SET name=?, path=?, status=?, interval=?
+        WHERE id=?
+        ''', (new_name, new_path, new_status, new_interval, id))
+
+        
+        cursor.connection.commit()
+
+        verificar_dias(cursor,lista_dias,dias_semana,id)
+
+        getAll(cursor, ventana_principal)
+
+        messagebox.showinfo("Confirmación", "Datos actualizados en la consola.\n¡Confirmación exitosa!")
+
+    except Exception as e:
+        print(e)
+        messagebox.showinfo("Error", "No se pudieron actulizar los datos.\nActualizacion fallida")
 
 
 ## Frontend
@@ -113,49 +171,66 @@ def abrir_tarjeta(cursor, id, nombre_tarjeta):
     campo_input.grid(row=6, column=0, padx=10, pady=5)
 
     #Seleccion de dias de la semana
+    dias_semana = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"]
     etiqueta_lista = ttk.Label(marco_tarjeta, text="Selecciona uno o más días de la semana:")
     etiqueta_lista.grid(row=7, column=0, padx=10, pady=5)
 
-    dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
     lista_dias = tk.Listbox(marco_tarjeta, selectmode=tk.MULTIPLE)
     for dia in dias_semana:
         lista_dias.insert(tk.END, dia)
     lista_dias.grid(row=8, column=0, padx=10, pady=5)
+    
+    verificar_dias(cursor,lista_dias,dias_semana,id)
+
+    boton_reset_dias = ttk.Button(marco_tarjeta, text="Reset dias", command=lambda: reset_dias(cursor,lista_dias,dias_semana,id))
+    boton_reset_dias.grid(row=9, column=0, padx=10, pady=5)
 
     # Seleccion del estado del bot
     etiqueta_estado = ttk.Label(marco_tarjeta, text="Estado:")
-    etiqueta_estado.grid(row=9, column=0, padx=10, pady=5)
+    etiqueta_estado.grid(row=10, column=0, padx=10, pady=5)
 
     estado_var = tk.BooleanVar()
     estado_var.set(True)  # Inicialmente, el checkbox Activo está marcado como verdadero
     checkbox_activo = ttk.Checkbutton(marco_tarjeta, text="Activo", variable=estado_var, onvalue=True, offvalue=False)
-    checkbox_activo.grid(row=10, column=0, padx=10, pady=5, sticky="w")
+    checkbox_activo.grid(row=11, column=0, padx=10, pady=5, sticky="w")
 
     checkbox_inactivo = ttk.Checkbutton(marco_tarjeta, text="Inactivo", variable=estado_var, onvalue=False, offvalue=True)
-    checkbox_inactivo.grid(row=11, column=0, padx=10, pady=5, sticky="w")
+    checkbox_inactivo.grid(row=12, column=0, padx=10, pady=5, sticky="w")
 
     #Boton de recoleccion de datos
-    boton_imprimir = ttk.Button(marco_tarjeta, text="Imprimir Datos y Confirmar", command=lambda: actualizar_datos(cursor,id ,nombre_tarjeta, campo_input,dias_semana,lista_dias,estado_var,campo_ruta_archivo))
-    boton_imprimir.grid(row=12, column=0, padx=10, pady=10)
+    boton_imprimir = ttk.Button(marco_tarjeta, text="Imprimir Datos y Confirmar", command=lambda: actualizar_datos(cursor,id ,nombre_tarjeta, campo_input,dias_semana,lista_dias,estado_var,campo_ruta_archivo,ventana_principal))
+    boton_imprimir.grid(row=13, column=0, padx=10, pady=10)
 
+def actualizar_seleccion(lista_dias, dias_semana, valores):
+    for i in range(len(dias_semana)):
+        valor = valores[i]
+        color_fondo = 'lightblue' if valor == 1 else 'white'
+        lista_dias.itemconfig(i, {'bg': color_fondo})
 
 try:
     #Inicilizo la base de datos
     cursor = init_db()
 
-    # Creacion de la ventana principal
     ventana_principal = tk.Tk()
     ventana_principal.title("Orquestador")
 
-    #Creacion boton de agregar bot
-    boton_nueva_tarjeta = ttk.Button(ventana_principal, text="Crear Nuevo Bot",  command=lambda: nuevo_bot(cursor, ventana_principal))
+
+    # Creación de botón para crear un nuevo bot
+    boton_nueva_tarjeta = ttk.Button(ventana_principal, text="Crear Nuevo Bot", command=lambda: nuevo_bot(cursor, contenedor_botones))
     boton_nueva_tarjeta.pack(expand=True, fill="both")
 
-    #REcupera todos los datos de la base de datos
-    getAll(cursor,ventana_principal)
+    # Creación de botón para actualizar la vista
+    boton_actualizar_vista = ttk.Button(ventana_principal, text="ACTUALIZAR", command=lambda: getAll(cursor, contenedor_botones))
+    boton_actualizar_vista.pack(expand=True, fill="both")
 
-    # Agregar botón para crear una nueva tarjeta
+     # Contenedor para los botones de los bots
+    contenedor_botones = ttk.Frame(ventana_principal)
+    contenedor_botones.pack()
 
+    # Llamar a la función getAll una vez para inicializar la lista de botones
+    getAll(cursor, contenedor_botones)
+
+    # Mantener la ventana principal abierta
     ventana_principal.mainloop()
 
 except Exception as e:
