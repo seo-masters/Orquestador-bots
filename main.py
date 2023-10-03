@@ -65,7 +65,11 @@ def getAll(cursor, container):
             status = False
 
         boton_tarjeta = ttk.Button(container, text=bot[1], command=lambda id=bot[0], nombre=bot[1]: abrir_tarjeta(cursor, id, nombre, bot[2], bot[4], status))
-        boton_tarjeta.pack(expand=True, fill="both")
+        boton_tarjeta.grid(row=bot[0], column=0, padx=10, pady=5)
+
+        boton_eliminar = ttk.Button(container, text='Eliminar', command=lambda id=bot[0]:eliminar_bot(cursor,id,container) )
+        boton_eliminar.grid(row=bot[0], column=1, padx=10, pady=5)
+
 # Verifica que dias estan activos
 def verificar_dias(cursor,lista_dias,dias_semana,id):
 
@@ -102,9 +106,6 @@ def actualizar_datos(cursor,id,campo_nombre,campo_input,dias_semana,lista_dias,e
 
     try:
 
-
-        print(dias_seleccionados)
-
         for dia in dias_seleccionados:
             diaUpdate = dia.lower()
 
@@ -113,7 +114,6 @@ def actualizar_datos(cursor,id,campo_nombre,campo_input,dias_semana,lista_dias,e
             SET {diaUpdate} = ?
             WHERE id= ?
             ''', (1,id))
-
         
         cursor.execute('''
         UPDATE bots
@@ -121,7 +121,6 @@ def actualizar_datos(cursor,id,campo_nombre,campo_input,dias_semana,lista_dias,e
         WHERE id=?
         ''', (new_name, new_path, new_status, new_interval, id))
 
-        
         cursor.connection.commit()
 
         verificar_dias(cursor,lista_dias,dias_semana,id)
@@ -133,6 +132,15 @@ def actualizar_datos(cursor,id,campo_nombre,campo_input,dias_semana,lista_dias,e
     except Exception as e:
         print(e)
         messagebox.showinfo("Error", "No se pudieron actulizar los datos.\nActualizacion fallida")
+#Eliminar Bot
+def eliminar_bot(cursor,id,contenedor_botones):
+    try:
+        cursor.execute('DELETE FROM bots WHERE id = ?', (id,))
+        cursor.connection.commit() 
+        getAll(cursor,contenedor_botones)
+        messagebox.showinfo("Confirmación", "Bot Borrado\n¡Eliminacion exitosa!")
+    except:
+        messagebox.showinfo("Error", "No se pudo borrar el dato.\Eliminacion fallida")
 
 ## Frontend
 # Permite la seleccion de la ruta
@@ -204,15 +212,25 @@ def abrir_tarjeta(cursor, id, nombre_tarjeta, path_pred, intervalo_pred, status)
     checkbox_inactivo = ttk.Checkbutton(marco_tarjeta, text="Inactivo", variable=estado_var, onvalue=False, offvalue=True)
     checkbox_inactivo.grid(row=12, column=0, padx=10, pady=5, sticky="w")
 
+    boton_imprimir = ttk.Button(marco_tarjeta, text="Correr", command=lambda: correr_bot(campo_ruta_archivo))
+    boton_imprimir.grid(row=13, column=1, padx=10, pady=10)
+
     #Boton de recoleccion de datos
     boton_imprimir = ttk.Button(marco_tarjeta, text="Actualizar", command=lambda: actualizar_datos(cursor,id ,campo_nombre, campo_input,dias_semana,lista_dias,estado_var,campo_ruta_archivo,contenedor_botones))
-    boton_imprimir.grid(row=13, column=0, padx=10, pady=10)
+    boton_imprimir.grid(row=14, column=0, padx=10, pady=10)
+    
 # Seleccion de creacion 
 def actualizar_seleccion(lista_dias, dias_semana, valores):
     for i in range(len(dias_semana)):
         valor = valores[i]
         color_fondo = 'lightblue' if valor == 1 else 'white'
         lista_dias.itemconfig(i, {'bg': color_fondo})
+
+
+def correr_bot(campo_ruta_archivo):
+    path = campo_ruta_archivo.get()
+    print('correr ruta: ',path)
+
 
 try:
     #Inicilizo la base de datos
@@ -230,7 +248,7 @@ try:
     contenedor_botones.pack()
 
     # Creación de botón para actualizar la vista
-    boton_actualizar_vista = ttk.Button(ventana_principal, text="ACTUALIZAR", command=lambda: getAll(cursor, contenedor_botones))
+    boton_actualizar_vista = ttk.Button(ventana_principal, text="Actulizar", command=lambda: getAll(cursor, contenedor_botones))
     boton_actualizar_vista.pack(expand=True, fill="both")
 
 
@@ -242,4 +260,3 @@ try:
 
 except Exception as e:
     print(e)
-# Crear la ventana principal
