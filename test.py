@@ -41,42 +41,42 @@
 
 # -------------------------------------------------------------------------------------------------------------------------------- Ejecucion de archivos .exe
 
-# import tkinter as tk
-# from tkinter import filedialog
-# import os
+import tkinter as tk
+from tkinter import filedialog
+import os
 
-# def listar_elementos_carpeta():
-#     # Obtener la carpeta seleccionada por el usuario
-#     carpeta_seleccionada = filedialog.askdirectory()
+def listar_elementos_carpeta():
+    # Obtener la carpeta seleccionada por el usuario
+    carpeta_seleccionada = filedialog.askdirectory()
 
-#     if carpeta_seleccionada:
-#         # Listar elementos en la carpeta
-#         elementos = os.listdir(carpeta_seleccionada)
+    if carpeta_seleccionada:
+        # Listar elementos en la carpeta
+        elementos = os.listdir(carpeta_seleccionada)
 
-#         # Mostrar las rutas de los elementos
-#         for elemento in elementos:
-#             ruta_elemento = os.path.join(carpeta_seleccionada, elemento)
+        # Mostrar las rutas de los elementos
+        for elemento in elementos:
+            ruta_elemento = os.path.join(carpeta_seleccionada, elemento)
             
-#             # Verificar si el elemento es un archivo .exe
-#             if os.path.isfile(ruta_elemento) and elemento.endswith(".exe"):
-#                 # Crear un botón para ejecutar el archivo .exe
-#                 boton_ejecutar = tk.Button(ventana, text=f"Ejecutar {elemento}", command=lambda exe=ruta_elemento: ejecutar_exe(exe))
-#                 boton_ejecutar.pack()
+            # Verificar si el elemento es un archivo .exe
+            if os.path.isfile(ruta_elemento) and elemento.endswith(".exe"):
+                # Crear un botón para ejecutar el archivo .exe
+                boton_ejecutar = tk.Button(ventana, text=f"Ejecutar {elemento}", command=lambda exe=ruta_elemento: ejecutar_exe(exe))
+                boton_ejecutar.pack()
 
-# def ejecutar_exe(ruta_exe):
-#     # Ejecutar el archivo .exe
-#     print(ruta_exe)
-#     os.system(ruta_exe)
+def ejecutar_exe(ruta_exe):
+    # Ejecutar el archivo .exe
+    print(ruta_exe)
+    os.system(ruta_exe)
 
-# # Crear la ventana principal
-# ventana = tk.Tk()
-# ventana.title("Listar y Ejecutar Archivos .exe")
+# Crear la ventana principal
+ventana = tk.Tk()
+ventana.title("Listar y Ejecutar Archivos .exe")
 
-# # Botón para seleccionar una carpeta
-# boton_seleccionar_carpeta = tk.Button(ventana, text="Seleccionar Carpeta", command=listar_elementos_carpeta)
-# boton_seleccionar_carpeta.pack()
+# Botón para seleccionar una carpeta
+boton_seleccionar_carpeta = tk.Button(ventana, text="Seleccionar Carpeta", command=listar_elementos_carpeta)
+boton_seleccionar_carpeta.pack()
 
-# ventana.mainloop()
+ventana.mainloop()
 
 # --------------------------------------------------------------------------------------------------------------------------------
 
@@ -140,62 +140,62 @@
 
 # ------------------------------------------------------------------------------------------------------------------------------
 
-# import time
-# import threading
-# import os
+import time
+import threading
+import os
 
-# # Hora definida para la comparación
-# hora_definida = "10:35:50"
+# Hora definida para la comparación
+hora_definida = "10:35:50"
 
-# def ejecutar_comando():
-#     # Obtener la hora actual en formato "HH:MM:SS"
-#     hora_actual = time.strftime("%H:%M:%S")
+def ejecutar_comando():
+    # Obtener la hora actual en formato "HH:MM:SS"
+    hora_actual = time.strftime("%H:%M:%S")
     
-#     # Calcular la diferencia en minutos entre la hora definida y la hora actual
-#     diferencia_minutos = calcular_diferencia_minutos(hora_definida, hora_actual)
+    # Calcular la diferencia en minutos entre la hora definida y la hora actual
+    diferencia_minutos = calcular_diferencia_minutos(hora_definida, hora_actual)
     
-#     print(f"Hora definida: {hora_definida}")
-#     print(f"Hora actual: {hora_actual}")
-#     print(f"Diferencia en minutos: {diferencia_minutos} minutos")
+    print(f"Hora definida: {hora_definida}")
+    print(f"Hora actual: {hora_actual}")
+    print(f"Diferencia en minutos: {diferencia_minutos} minutos")
 
-# def calcular_diferencia_minutos(hora_definida, hora_actual):
-#     # Parsear las horas en formato "HH:MM:SS" a segundos
-#     tiempo_definido = sum(int(x) * 60 ** i for i, x in enumerate(reversed(hora_definida.split(":"))))
-#     tiempo_actual = sum(int(x) * 60 ** i for i, x in enumerate(reversed(hora_actual.split(":"))))
+def calcular_diferencia_minutos(hora_definida, hora_actual):
+    # Parsear las horas en formato "HH:MM:SS" a segundos
+    tiempo_definido = sum(int(x) * 60 ** i for i, x in enumerate(reversed(hora_definida.split(":"))))
+    tiempo_actual = sum(int(x) * 60 ** i for i, x in enumerate(reversed(hora_actual.split(":"))))
     
-#     # Calcular la diferencia en segundos y luego convertirla a minutos
-#     diferencia_segundos = tiempo_actual - tiempo_definido
-#     diferencia_minutos = diferencia_segundos / 60
+    # Calcular la diferencia en segundos y luego convertirla a minutos
+    diferencia_segundos = tiempo_actual - tiempo_definido
+    diferencia_minutos = diferencia_segundos / 60
     
-#     return diferencia_minutos
+    return diferencia_minutos
 
-# def verificar_tiempo():
-#     while True:
-#         tiempo_actual = time.localtime()
-#         minutos_actual = tiempo_actual.tm_min
+def verificar_tiempo():
+    while True:
+        tiempo_actual = time.localtime()
+        minutos_actual = tiempo_actual.tm_min
         
-#         # Espera hasta que pase un minuto
-#         while tiempo_actual.tm_min == minutos_actual:
-#             time.sleep(1)
-#             tiempo_actual = time.localtime()
+        # Espera hasta que pase un minuto
+        while tiempo_actual.tm_min == minutos_actual:
+            time.sleep(1)
+            tiempo_actual = time.localtime()
         
-#         # Ejecuta el comando
-#         ejecutar_comando()
+        # Ejecuta el comando
+        ejecutar_comando()
 
-# # Iniciar un subproceso para verificar el tiempo
-# hilo_tiempo = threading.Thread(target=verificar_tiempo)
-# hilo_tiempo.daemon = True
-# hilo_tiempo.start()
+# Iniciar un subproceso para verificar el tiempo
+hilo_tiempo = threading.Thread(target=verificar_tiempo)
+hilo_tiempo.daemon = True
+hilo_tiempo.start()
 
-# # Puedes continuar ejecutando otras tareas en el hilo principal
-# # mientras el subproceso verifica el tiempo en segundo plano.
+# Puedes continuar ejecutando otras tareas en el hilo principal
+# mientras el subproceso verifica el tiempo en segundo plano.
 
-# # Mantén el programa en ejecución
-# try:
-#     while True:
-#         pass
-# except KeyboardInterrupt:
-#     pass
+# Mantén el programa en ejecución
+try:
+    while True:
+        pass
+except KeyboardInterrupt:
+    pass
 
 
 
@@ -329,33 +329,33 @@
 # -------------------------------------------------------------------------------------------------------------- Ejecucion en cola
 
 
-import tkinter as tk
-from tkinter import ttk
+# import tkinter as tk
+# from tkinter import ttk
 
-def actualizar_seleccion():
-    seleccionados = lista_dias.curselection()
-    for i in range(len(dias_semana)):
-        lista_dias.itemconfig(i, {'bg': 'white'})  # Reiniciar el color de fondo
-    for indice in seleccionados:
-        lista_dias.itemconfig(indice, {'bg': 'lightblue'})  # Cambiar el color de fondo de los seleccionados
+# def actualizar_seleccion():
+#     seleccionados = lista_dias.curselection()
+#     for i in range(len(dias_semana)):
+#         lista_dias.itemconfig(i, {'bg': 'white'})  # Reiniciar el color de fondo
+#     for indice in seleccionados:
+#         lista_dias.itemconfig(indice, {'bg': 'lightblue'})  # Cambiar el color de fondo de los seleccionados
 
-dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+# dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
 
-ventana = tk.Tk()
-ventana.title("Seleccionar Días")
+# ventana = tk.Tk()
+# ventana.title("Seleccionar Días")
 
-marco = ttk.Frame(ventana)
-marco.grid(row=0, column=0)
+# marco = ttk.Frame(ventana)
+# marco.grid(row=0, column=0)
 
-etiqueta_lista = ttk.Label(marco, text="Selecciona uno o más días de la semana:")
-etiqueta_lista.grid(row=0, column=0, padx=10, pady=5)
+# etiqueta_lista = ttk.Label(marco, text="Selecciona uno o más días de la semana:")
+# etiqueta_lista.grid(row=0, column=0, padx=10, pady=5)
 
-lista_dias = tk.Listbox(marco, selectmode=tk.MULTIPLE)
-for dia in dias_semana:
-    lista_dias.insert(tk.END, dia)
-lista_dias.grid(row=1, column=0, padx=10, pady=5)
+# lista_dias = tk.Listbox(marco, selectmode=tk.MULTIPLE)
+# for dia in dias_semana:
+#     lista_dias.insert(tk.END, dia)
+# lista_dias.grid(row=1, column=0, padx=10, pady=5)
 
-boton_actualizar = ttk.Button(marco, text="Actualizar Selección", command=actualizar_seleccion)
-boton_actualizar.grid(row=2, column=0, padx=10, pady=5)
+# boton_actualizar = ttk.Button(marco, text="Actualizar Selección", command=actualizar_seleccion)
+# boton_actualizar.grid(row=2, column=0, padx=10, pady=5)
 
-ventana.mainloop()
+# ventana.mainloop()

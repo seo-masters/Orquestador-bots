@@ -3,10 +3,13 @@ from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
 import sqlite3
+import subprocess
+import threading
 
 # Lista para almacenar las tarjetas creadas
 tarjetas = []
-
+# lista de procesos en ejecucion
+procesos = []
 ## Base de datos
 def init_db():
     conn = sqlite3.connect('Orquestador.db')
@@ -64,12 +67,13 @@ def getAll(cursor, container):
         else:
             status = False
 
-        boton_tarjeta = ttk.Button(container, text=bot[1], command=lambda id=bot[0], nombre=bot[1]: abrir_tarjeta(cursor, id, nombre, bot[2], bot[4], status))
+        path = bot[2]
+
+        boton_tarjeta = ttk.Button(container, text=bot[1], command=lambda id=bot[0], nombre=bot[1], path=path, param4=bot[4], status=status: abrir_tarjeta(cursor, id, nombre, path, param4, status))
         boton_tarjeta.grid(row=bot[0], column=0, padx=10, pady=5)
 
         boton_eliminar = ttk.Button(container, text='Eliminar', command=lambda id=bot[0]:eliminar_bot(cursor,id,container) )
         boton_eliminar.grid(row=bot[0], column=1, padx=10, pady=5)
-
 # Verifica que dias estan activos
 def verificar_dias(cursor,lista_dias,dias_semana,id):
 
@@ -150,7 +154,6 @@ def seleccionar_archivo(campo_ruta_archivo):
     campo_ruta_archivo.insert(0, archivo_ruta)
 # Abre la tarjeta de configuracion del bot
 def abrir_tarjeta(cursor, id, nombre_tarjeta, path_pred, intervalo_pred, status): 
-
     #Creacion de la Ventana
     ventana_tarjeta = tk.Toplevel(contenedor_botones)
     ventana_tarjeta.title(f"Bot #{id} - {nombre_tarjeta}")
@@ -212,13 +215,12 @@ def abrir_tarjeta(cursor, id, nombre_tarjeta, path_pred, intervalo_pred, status)
     checkbox_inactivo = ttk.Checkbutton(marco_tarjeta, text="Inactivo", variable=estado_var, onvalue=False, offvalue=True)
     checkbox_inactivo.grid(row=12, column=0, padx=10, pady=5, sticky="w")
 
-    boton_imprimir = ttk.Button(marco_tarjeta, text="Correr", command=lambda: correr_bot(campo_ruta_archivo))
-    boton_imprimir.grid(row=13, column=1, padx=10, pady=10)
+    boton_ejecutar = ttk.Button(marco_tarjeta, text="Correr", command=lambda: boton_correr(campo_ruta_archivo))
+    boton_ejecutar.grid(row=13, column=0, padx=10, pady=10)
 
     #Boton de recoleccion de datos
     boton_imprimir = ttk.Button(marco_tarjeta, text="Actualizar", command=lambda: actualizar_datos(cursor,id ,campo_nombre, campo_input,dias_semana,lista_dias,estado_var,campo_ruta_archivo,contenedor_botones))
     boton_imprimir.grid(row=14, column=0, padx=10, pady=10)
-    
 # Seleccion de creacion 
 def actualizar_seleccion(lista_dias, dias_semana, valores):
     for i in range(len(dias_semana)):
@@ -226,37 +228,51 @@ def actualizar_seleccion(lista_dias, dias_semana, valores):
         color_fondo = 'lightblue' if valor == 1 else 'white'
         lista_dias.itemconfig(i, {'bg': color_fondo})
 
+# Ejecuta el bot.exe
+def correr_bot(path):
+    try:
+        subprocess.Popen(path, shell=True)
+        print("El archivo .exe se ha ejecutado en segundo plano.")
+    except Exception as e:
+        print(f"Error al ejecutar el archivo .exe: {str(e)}")
 
-def correr_bot(campo_ruta_archivo):
-    path = campo_ruta_archivo.get()
-    print('correr ruta: ',path)
+#Ejecuta el bot en un hilo 
+def ejecutar_bot_en_hilo(path):
+    hilo = threading.Thread(target=correr_bot, args=(path,))
+    hilo.start()
 
+#Disparador que recibe la ruta y ejeuta el bot
+def boton_correr(campo_ruta_archivo):
+    ruta_al_exe = campo_ruta_archivo.get()
+    ejecutar_bot_en_hilo(ruta_al_exe)
 
 try:
-    #Inicilizo la base de datos
-    cursor = init_db()
 
-    ventana_principal = tk.Tk()
-    ventana_principal.title("Orquestador")
+    if __name__ == "__main__":
+        #Inicilizo la base de datos
+        cursor = init_db()
 
-    # Creación de botón para crear un nuevo bot
-    boton_nueva_tarjeta = ttk.Button(ventana_principal, text="Crear Nuevo Bot", command=lambda: nuevo_bot(cursor, contenedor_botones))
-    boton_nueva_tarjeta.pack(expand=True, fill="both")
+        ventana_principal = tk.Tk()
+        ventana_principal.title("Orquestador")
 
-     # Contenedor para los botones de los bots
-    contenedor_botones = ttk.Frame(ventana_principal)
-    contenedor_botones.pack()
+        # Creación de botón para crear un nuevo bot
+        boton_nueva_tarjeta = ttk.Button(ventana_principal, text="Crear Nuevo Bot", command=lambda: nuevo_bot(cursor, contenedor_botones))
+        boton_nueva_tarjeta.pack(expand=True, fill="both")
 
-    # Creación de botón para actualizar la vista
-    boton_actualizar_vista = ttk.Button(ventana_principal, text="Actulizar", command=lambda: getAll(cursor, contenedor_botones))
-    boton_actualizar_vista.pack(expand=True, fill="both")
+        # Contenedor para los botones de los bots
+        contenedor_botones = ttk.Frame(ventana_principal)
+        contenedor_botones.pack()
+
+        # Creación de botón para actualizar la vista
+        boton_actualizar_vista = ttk.Button(ventana_principal, text="Actulizar", command=lambda: getAll(cursor, contenedor_botones))
+        boton_actualizar_vista.pack(expand=True, fill="both")
 
 
-    # Llamar a la función getAll una vez para inicializar la lista de botones
-    getAll(cursor, contenedor_botones)
+        # Llamar a la función getAll una vez para inicializar la lista de botones
+        getAll(cursor, contenedor_botones)
 
-    # Mantener la ventana principal abierta
-    ventana_principal.mainloop()
+        # Mantener la ventana principal abierta
+        ventana_principal.mainloop()
 
 except Exception as e:
     print(e)
