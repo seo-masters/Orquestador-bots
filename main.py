@@ -38,6 +38,16 @@ while True:
             last_run TEXT
         );
         ''')
+        # Creación de la tabla "logs"
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS logs (
+                id INTEGER PRIMARY KEY,
+                name_bot TEXT NOT NULL,
+                date TEXT NOT NULL,
+                mensaje TEXT NOT NULL,
+                type TEXT NOT NULL
+            );
+            ''')
 
         cursor = conn.cursor()
 
@@ -55,6 +65,7 @@ while True:
         cursor.connection.commit()
 
         getAll(cursor,container)
+    
     # recuperar todo los datos
     def getAll(cursor, container):
         global tarjetas
@@ -366,7 +377,6 @@ while True:
         hilo_tiempo = threading.Thread(target=auto_ejecucion)
         hilo_tiempo.daemon = True
         hilo_tiempo.start()
-
 
 
     try:

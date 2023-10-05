@@ -1,49 +1,106 @@
-# Documentación del Código
+# Orquestador
 
-Este documento proporciona una descripción y documentación del código Python proporcionado. El código se encarga de crear una aplicación de interfaz gráfica de usuario (GUI) utilizando el módulo `tkinter`. La aplicación permite a los usuarios crear y gestionar tarjetas personalizadas con diversos detalles.
+Este es un programa de orquestación que permite crear y gestionar bots con tareas programadas. Utiliza la biblioteca `tkinter` para la interfaz gráfica, `sqlite3` para la base de datos y `subprocess` para ejecutar los bots en segundo plano.
 
-## Resumen
+## Funciones Principales
 
-El código realiza las siguientes acciones:
+### `init_db()`
+- Inicializa la base de datos SQLite llamada `Orquestador.db`.
+- Crea las tablas `bots` y `logs` si no existen.
+- Parámetros: No toma ningún parámetro.
+   
+### `nuevo_bot(cursor, container)`
+- Agrega un nuevo bot a la base de datos con valores predeterminados.
+- Actualiza la vista de la interfaz gráfica con el nuevo bot.
 
-1. Inicia una ventana principal de la aplicación "Orquestador".
-2. Permite al usuario crear nuevas tarjetas personalizadas con nombre, intervalo de tiempo, días de la semana, estado y ruta de archivo.
-3. Muestra ventanas emergentes para ingresar datos y confirmar la información de la tarjeta.
-4. Almacena las tarjetas creadas en una lista.
-5. Proporciona la opción de seleccionar archivos y muestra la ruta del archivo seleccionado en un campo de entrada.
-6. Imprime los detalles de la tarjeta en la consola y muestra una ventana emergente de confirmación.
+- Parámetros:
+    - `cursor`: El cursor de la base de datos obtenido de `init_db()`.
+    - `container`: El contenedor en la interfaz gráfica donde se mostrarán los botones de los bots.
 
-## Uso
+### `getAll(cursor, container)`
+- Recupera todos los datos de los bots desde la base de datos.
+- Actualiza la vista de la interfaz gráfica con los bots existentes.
 
-Para utilizar este código, asegúrese de tener instalada la biblioteca `tkinter`, que es estándar en la mayoría de las instalaciones de Python.
+- Parámetros:
+    - `cursor`: El cursor de la base de datos obtenido de init_db().
+    - `container`: El contenedor en la interfaz gráfica donde se mostrarán los botones de los bots.
 
-## Estructura del Código
+### `abrir_tarjeta(cursor, id, nombre_tarjeta, path_pred, intervalo_pred, status)`
+- Abre una ventana para configurar un bot existente.
+- Permite editar el nombre, la ruta del archivo ejecutable, el intervalo de ejecución, los días de la semana y el estado del bot.
 
-El código se divide en las siguientes secciones principales:
+- Parámetros:
+    - `cursor`: El cursor de la base de datos obtenido de `init_db()`.
+    - `id`: El identificador único del bot.
+    - `nombre_tarjeta`: El nombre del bot.
+    - `path_pred`: La ruta del archivo ejecutable del bot.
+    - `intervalo_pred`: El intervalo de ejecución del bot en minutos.
+    - `status`: El estado del bot (`activo` o `inactivo`).
 
-1. **Configuración Inicial**: Importa las bibliotecas necesarias y establece algunas configuraciones iniciales.
+### `seleccionar_archivo(campo_ruta_archivo)`
+- Abre un cuadro de diálogo para seleccionar la ruta de un archivo ejecutable.
 
-2. **Función `seleccionar_archivo(campo_ruta_archivo)`**: Abre un cuadro de diálogo para seleccionar un archivo y muestra la ruta del archivo en un campo de entrada.
+- Parámetros:
+    - `campo_ruta_archivo`: El campo de entrada donde se mostrará la ruta del archivo ejecutable.
 
-3. **Función `abrir_ventana_input(id)`**: Abre una ventana emergente donde el usuario puede ingresar texto y luego mostrarlo en una ventana emergente de confirmación.
+### `boton_correr(id, campo_ruta_archivo)`
+- Ejecuta un bot en un hilo separado con la ruta del archivo ejecutable proporcionada.
 
-4. **Función `abrir_tarjeta(id, nombre_tarjeta)`**: Abre una ventana de tarjeta para ingresar detalles de la tarjeta, incluyendo nombre, ruta de archivo, intervalo, días de la semana seleccionados y estado.
+- Parámetros:
+    - `id`: El identificador único del bot.
+    - `campo_ruta_archivo`: El campo de entrada que contiene la ruta del archivo ejecutable del bot.
 
-5. **Función `agregar_tarjeta()`**: Agrega una nueva tarjeta a la lista y crea un botón correspondiente en la ventana principal.
+### `ejecutar_bot_en_hilo(id, path)`
+- Crea un hilo para ejecutar un bot con una ruta de archivo específica.
 
-6. **Creación de la Ventana Principal**: Se crea la ventana principal de la aplicación llamada "Orquestador" con un botón para crear nuevas tarjetas.
+- Parámetros:
+    - `id`: El identificador único del bot.
+    - `path`: La ruta del archivo ejecutable del bot.
+
+### `correr_bot(id, path)`
+- Ejecuta el archivo ejecutable del bot y registra la hora de finalización en la base de datos.
+
+- Parámetros:
+    - `id`: El identificador único del bot.
+    - `path`: La ruta del archivo ejecutable del bot.
+
+### `actualizar_seleccion(lista_dias, dias_semana, valores)`
+- Actualiza la selección de días de la semana en la interfaz gráfica.
+
+- Parámetros:
+    - `lista_dias`: La lista de días de la semana en la interfaz gráfica.
+    - `dias_semana`: Una lista de nombres de días de la semana.
+    - `valores`: Una lista de valores (`0` o `1`) que indican si un día está seleccionado o no.
+
+### `calcular_diferencia_minutos(hora_definida, hora_actual)`
+- Calcula la diferencia en minutos entre dos horas en formato "HH:MM:SS".
+
+- Parámetros:
+    - `hora_definida`: La hora en formato "HH:MM:SS" que se va a comparar.
+    - `hora_actual`: La hora actual en formato "HH:MM:SS".
+
+### `ejecutar_bot_programado()`
+- Ejecuta los bots programados basados en su intervalo y hora definida.
+
+### `auto_ejecucion()`
+- Ejecuta el `ejecutar_bot_programado` en un bucle infinito para verificar la hora actual y ejecutar los bots según corresponda.
+
+### `init_programacion_bots()`
+- Inicializa la programación de bots llamando a `auto_ejecucion` en un hilo separado.
 
 ## Diagrama
 
-A continuación se muestra un diagrama que representa la estructura del flujo de datos en el código:
-
 ![Diagrama de Flujo](Diagrama.png)
 
+## Interfaz Gráfica
+- La interfaz permite crear, configurar y ejecutar bots.
+- Cada bot tiene un nombre, una ruta de archivo ejecutable, un intervalo de ejecución, días de la semana y un estado (activo o inactivo).
 
-## Notas Adicionales
+## Ejecución Programada
+- Los bots pueden programarse para ejecutarse a intervalos específicos y en días de la semana definidos.
+- La ejecución programada se realiza en segundo plano.
 
-- El código es una aplicación de ejemplo y puede ser personalizado y ampliado según las necesidades del usuario.
+## Base de Datos
+- Utiliza una base de datos SQLite llamada `Orquestador.db` para almacenar información sobre los bots y sus ejecuciones.
 
-## Conclusiones
-
-Este código proporciona una base para crear una aplicación de gestión de tarjetas personalizadas utilizando `tkinter`. Los usuarios pueden crear, editar y gestionar tarjetas con detalles específicos. Este código se puede utilizar como punto de partida para proyectos más complejos de aplicaciones GUI.
+Espero que esta documentación te sea útil. Si necesitas más detalles o aclaraciones sobre alguna parte del código, no dudes en preguntar.
