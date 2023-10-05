@@ -50,7 +50,7 @@ while True:
         cursor.execute('''
         INSERT INTO bots (name, path, status, interval, lunes, martes, miercoles, jueves, viernes, sabado, domingo, last_run)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (f'Nuevo Bot {id}','c:/','active', 0, 0, 0, 0, 0, 0, 0, 0, "Sin ejecucion"))
+        ''', (f'Nuevo Bot {id}','c:/','Inactivo', 0, 0, 0, 0, 0, 0, 0, 0, "Sin ejecucion"))
 
         cursor.connection.commit()
 
@@ -142,7 +142,7 @@ while True:
         except Exception as e:
             print(e)
             messagebox.showinfo("Error", "No se pudieron actulizar los datos.\nActualizacion fallida")
-    #Eliminar Bot
+    # Eliminar Bot
     def eliminar_bot(cursor,id,contenedor_botones):
         try:
             cursor.execute('DELETE FROM bots WHERE id = ?', (id,))
@@ -151,8 +151,8 @@ while True:
             messagebox.showinfo("Confirmación", "Bot Borrado\n¡Eliminacion exitosa!")
         except:
             messagebox.showinfo("Error", "No se pudo borrar el dato.\Eliminacion fallida")
-
-    def update_last_run_by_id(bot_id, last_run_value):
+    # Actualiza el campo de last_run de cada bot
+    def actualizar_last_run(bot_id, last_run_value):
         try:
             # Crear y abrir la conexión a la base de datos en este hilo
             conexion = sqlite3.connect("Orquestador.db")
@@ -165,6 +165,21 @@ while True:
             conexion.close()
         except Exception as e:
             print(f"Error al ejecutar la actualización en la base de datos: {str(e)}")
+
+    def get_intervalo_last_run():
+        try:
+            conexion = sqlite3.connect("Orquestador.db")
+            cursor = conexion.cursor()
+        
+            cursor.execute('SELECT name, interval, last_run, status, path, id FROM bots')
+            result = cursor.fetchall()  # Recuperar la primera fila como una tupla
+
+            if result:
+                return result
+            else:
+                return None  # El bot con el ID proporcionado no se encontró en la base de datos
+        except Exception as e:
+            print(f"Error al ejecutar la consulta en la base de datos: {str(e)}")
 
 
     ## Frontend
@@ -236,7 +251,7 @@ while True:
         checkbox_inactivo = ttk.Checkbutton(marco_tarjeta, text="Inactivo", variable=estado_var, onvalue=False, offvalue=True)
         checkbox_inactivo.grid(row=12, column=0, padx=10, pady=5, sticky="w")
 
-        boton_ejecutar = ttk.Button(marco_tarjeta, text="Correr", command=lambda: boton_correr(cursor,id,campo_ruta_archivo))
+        boton_ejecutar = ttk.Button(marco_tarjeta, text="Correr", command=lambda: boton_correr(id,campo_ruta_archivo))
         boton_ejecutar.grid(row=13, column=0, padx=10, pady=10)
 
         #Boton de recoleccion de datos
@@ -249,18 +264,18 @@ while True:
             color_fondo = 'lightblue' if valor == 1 else 'white'
             lista_dias.itemconfig(i, {'bg': color_fondo})
 
+
+    ##Ejecucion de bots
     # Disparador que recibe la ruta y ejeuta el bot
-    def boton_correr(cursor,id,campo_ruta_archivo):
+    def boton_correr(id,campo_ruta_archivo):
         ruta_al_exe = campo_ruta_archivo.get()
-        ejecutar_bot_en_hilo(cursor,id,ruta_al_exe)
-
+        ejecutar_bot_en_hilo(id,ruta_al_exe)
     #Ejecuta el bot en un hilo 
-    def ejecutar_bot_en_hilo(cursor,id,path):
-        hilo = threading.Thread(target=correr_bot, args=(cursor,id,path))
+    def ejecutar_bot_en_hilo(id,path):
+        hilo = threading.Thread(target=correr_bot, args=(id,path))
         hilo.start()
-
     # Ejecuta el bot.exe
-    def correr_bot(cursor,id,path):
+    def correr_bot(id,path):
         try:
             proceso = subprocess.Popen(path, shell=True)
             proceso.wait()  # Esperar a que el proceso termine
@@ -272,17 +287,95 @@ while True:
             hora_actual = time.strftime("%H:%M:%S")
             hora_finalizacion = hora_actual
 
-            update_last_run_by_id(id, hora_actual)
+            actualizar_last_run(id, hora_actual)
 
             print(f"Hora de finalización: {hora_actual} Bot {id}")
         except Exception as e:
             print(f"Error al ejecutar el archivo .exe: {str(e)}")
+
+    ###Comparacion de bots en segundo plano
+
+    def calcular_diferencia_minutos(hora_definida, hora_actual):
+        # Parsear las horas en formato "HH:MM:SS" a segundos
+        tiempo_definido = sum(int(x) * 60 ** i for i, x in enumerate(reversed(hora_definida.split(":"))))
+        tiempo_actual = sum(int(x) * 60 ** i for i, x in enumerate(reversed(hora_actual.split(":"))))
+        
+        # Calcular la diferencia en segundos y luego convertirla a minutos
+        diferencia_segundos = tiempo_actual - tiempo_definido
+        diferencia_minutos = diferencia_segundos / 60
+    
+        return diferencia_minutos
+    
+    def ejecutar_bot_programado():
+
+        hora_actual = time.strftime("%H:%M:%S")
+
+        bots = get_intervalo_last_run()
+
+        for bot in bots:
+
+            nombre_bot = bot[0]
+            interval = bot[1]
+            hora_definida = bot[2]
+            status = bot[3]
+            path = bot[4]
+            id = bot[5]
+
+            def calculo_Ejecucion():
+
+                diferencia_minutos = calcular_diferencia_minutos(hora_definida, hora_actual)
+
+                if diferencia_minutos >= interval:
+
+                    print("----------------------------------------------------")
+                    print(f"Bot: {nombre_bot}")
+                    print(f"Hora ultima: {hora_definida}")
+                    print(f"Hora actual: {hora_actual}")
+                    print(f"Diferencia en minutos: {diferencia_minutos} minutos")
+                    print("----------------------------------------------------")
+                    ejecutar_bot_en_hilo(id,path)
+
+
+
+            if hora_definida == 'Sin ejecucion':
+                if status == 'Activo':
+                    print(f'Primera ejecucion bot: {nombre_bot}')
+                    ejecutar_bot_en_hilo(id,path)
+                else:
+                    pass
+            else:
+                if status == 'Activo':
+                    calculo_Ejecucion()
+                else:
+                    pass
+
+    def auto_ejecucion():
+        while True:
+            tiempo_actual = time.localtime()
+            minutos_actual = tiempo_actual.tm_min
+            
+            # Espera hasta que pase un minuto
+            while tiempo_actual.tm_min == minutos_actual:
+                time.sleep(1)
+                tiempo_actual = time.localtime()
+            
+            # Ejecuta el comando
+            ejecutar_bot_programado()
+
+    def init_programacion_bots():
+        hilo_tiempo = threading.Thread(target=auto_ejecucion)
+        hilo_tiempo.daemon = True
+        hilo_tiempo.start()
+
+
 
     try:
 
         if __name__ == "__main__":
             #Inicilizo la base de datos
             cursor = init_db()
+
+            init_programacion_bots()
 
             ventana_principal = tk.Tk()
             ventana_principal.title("Orquestador")

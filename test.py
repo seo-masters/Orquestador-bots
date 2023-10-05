@@ -41,42 +41,42 @@
 
 # -------------------------------------------------------------------------------------------------------------------------------- Ejecucion de archivos .exe
 
-import tkinter as tk
-from tkinter import filedialog
-import os
+# import tkinter as tk
+# from tkinter import filedialog
+# import os
 
-def listar_elementos_carpeta():
-    # Obtener la carpeta seleccionada por el usuario
-    carpeta_seleccionada = filedialog.askdirectory()
+# def listar_elementos_carpeta():
+#     # Obtener la carpeta seleccionada por el usuario
+#     carpeta_seleccionada = filedialog.askdirectory()
 
-    if carpeta_seleccionada:
-        # Listar elementos en la carpeta
-        elementos = os.listdir(carpeta_seleccionada)
+#     if carpeta_seleccionada:
+#         # Listar elementos en la carpeta
+#         elementos = os.listdir(carpeta_seleccionada)
 
-        # Mostrar las rutas de los elementos
-        for elemento in elementos:
-            ruta_elemento = os.path.join(carpeta_seleccionada, elemento)
+#         # Mostrar las rutas de los elementos
+#         for elemento in elementos:
+#             ruta_elemento = os.path.join(carpeta_seleccionada, elemento)
             
-            # Verificar si el elemento es un archivo .exe
-            if os.path.isfile(ruta_elemento) and elemento.endswith(".exe"):
-                # Crear un botón para ejecutar el archivo .exe
-                boton_ejecutar = tk.Button(ventana, text=f"Ejecutar {elemento}", command=lambda exe=ruta_elemento: ejecutar_exe(exe))
-                boton_ejecutar.pack()
+#             # Verificar si el elemento es un archivo .exe
+#             if os.path.isfile(ruta_elemento) and elemento.endswith(".exe"):
+#                 # Crear un botón para ejecutar el archivo .exe
+#                 boton_ejecutar = tk.Button(ventana, text=f"Ejecutar {elemento}", command=lambda exe=ruta_elemento: ejecutar_exe(exe))
+#                 boton_ejecutar.pack()
 
-def ejecutar_exe(ruta_exe):
-    # Ejecutar el archivo .exe
-    print(ruta_exe)
-    os.system(ruta_exe)
+# def ejecutar_exe(ruta_exe):
+#     # Ejecutar el archivo .exe
+#     print(ruta_exe)
+#     os.system(ruta_exe)
 
-# Crear la ventana principal
-ventana = tk.Tk()
-ventana.title("Listar y Ejecutar Archivos .exe")
+# # Crear la ventana principal
+# ventana = tk.Tk()
+# ventana.title("Listar y Ejecutar Archivos .exe")
 
-# Botón para seleccionar una carpeta
-boton_seleccionar_carpeta = tk.Button(ventana, text="Seleccionar Carpeta", command=listar_elementos_carpeta)
-boton_seleccionar_carpeta.pack()
+# # Botón para seleccionar una carpeta
+# boton_seleccionar_carpeta = tk.Button(ventana, text="Seleccionar Carpeta", command=listar_elementos_carpeta)
+# boton_seleccionar_carpeta.pack()
 
-ventana.mainloop()
+# ventana.mainloop()
 
 # --------------------------------------------------------------------------------------------------------------------------------
 
@@ -142,7 +142,6 @@ ventana.mainloop()
 
 import time
 import threading
-import os
 
 # Hora definida para la comparación
 hora_definida = "10:35:50"
