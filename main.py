@@ -1,7 +1,8 @@
-import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
+from skpy import Skype
+import tkinter as tk
 import sqlite3
 import subprocess
 import threading
@@ -241,8 +242,15 @@ while True:
             cursor.execute('SELECT name, interval, last_run, status, path, id FROM bots')
             result = cursor.fetchall()  # Recuperar la primera fila como una tupla
 
+            cursor.execute('''
+                    SELECT lunes, martes, miercoles, jueves, viernes, sabado, domingo
+                    FROM bots
+                    WHERE id = ?
+                ''', (result[0][5],))   
+            valores = cursor.fetchall()
+
             if result:
-                return result
+                return result, valores[0]
             else:
                 return None  # El bot con el ID proporcionado no se encontró en la base de datos
         except Exception as e:
@@ -371,10 +379,10 @@ while True:
     # Ejecuta el bot.exe
     def correr_bot(id,path):
         try:
+            hora_actual = time.strftime("%H:%M:%S")
+            reporte_skype(id, f'Bot Ejecutado: {hora_actual}')
             proceso = subprocess.Popen(path, shell=True)
             proceso.wait()  # Esperar a que el proceso termine
-
-            print("El archivo .exe se ha ejecutado en segundo plano.")
             log('correr_bot', f'Ejecucion de Bot: {id}', 'EJECUCION')  
 
             global hora_finalizacion
@@ -384,11 +392,31 @@ while True:
 
             actualizar_last_run(id, hora_actual)
 
-            log('correr_bot', f'Bot finalizado: {hora_actual} Bot {id}', 'FINALIZACION')  
+            log('correr_bot', f'Bot finalizado: {hora_actual} Bot {id}', 'FINALIZACION')
+            reporte_skype(id, f'Bot finalizado: {hora_actual}')
+
         except Exception as e:
             log('correr_bot', str(e), 'ERROR')
 
     ###Comparacion de bots en segundo plano
+
+    def dia_semana_hoy():
+        # Diccionario para traducir los nombres de los días al español
+        days_es = {
+            "Monday": "Lunes",
+            "Tuesday": "Martes",
+            "Wednesday": "Miércoles",
+            "Thursday": "Jueves",
+            "Friday": "Viernes",
+            "Saturday": "Sábado",
+            "Sunday": "Domingo",
+        }
+
+        # Obtener el día actual
+        today = datetime.datetime.today().strftime('%A')
+        today_es = days_es[today]
+
+        return today_es
 
     def calcular_diferencia_minutos(hora_definida, hora_actual):
 
@@ -409,46 +437,56 @@ while True:
         try:
             hora_actual = time.strftime("%H:%M:%S")
 
-            bots = get_intervalo_last_run()
+            bots,valores_dias  = get_intervalo_last_run()
 
             for bot in bots:
 
-                try: 
+                dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
 
-                    nombre_bot = bot[0]
-                    interval = bot[1]
-                    hora_definida = bot[2]
-                    status = bot[3]
-                    path = bot[4]
-                    id = bot[5]
+                # Convertir valores binarios a nombres de días de la semana
+                dias_seleccionados = [dias_semana[i] for i, valor in enumerate(valores_dias) if valor == 1]
 
-                    def calculo_Ejecucion():
-
-                        diferencia_minutos = calcular_diferencia_minutos(hora_definida, hora_actual)
-
-                        if diferencia_minutos >= interval:
-
-                            ejecutar_bot_en_hilo(id,path)
-
-                    if hora_definida == 'Sin ejecucion':
-                        if status == 'Activo':
-                            print(f'Primera ejecucion bot: {nombre_bot}')
-                            ejecutar_bot_en_hilo(id,path)
-                        else:
-                            pass
-                    else:
-                        if status == 'Activo':
-                            calculo_Ejecucion()
-                        else:
-                            pass
+                today = dia_semana_hoy()
                 
-                except Exception as e:
-                    print(f'ejecutar_bot_programado - Error al ejecutar bot {bot[5]} :  {str(e)}')
+                program_day = today in dias_seleccionados
+
+                if program_day:
+
+                    try: 
+
+                        nombre_bot = bot[0]
+                        interval = bot[1]
+                        hora_definida = bot[2]
+                        status = bot[3]
+                        path = bot[4]
+                        id = bot[5]
 
 
+                        def calculo_Ejecucion():
+
+                            diferencia_minutos = calcular_diferencia_minutos(hora_definida, hora_actual)
+
+                            if diferencia_minutos >= interval:
+
+                                ejecutar_bot_en_hilo(id,path)
+
+                        if hora_definida == 'Sin ejecucion':
+                            if status == 'Activo':
+                                print(f'Primera ejecucion bot: {nombre_bot}')
+                                ejecutar_bot_en_hilo(id,path)
+                            else:
+                                pass
+                        else:
+                            if status == 'Activo':
+                                calculo_Ejecucion()
+                            else:
+                                pass
+                    
+                    except Exception as e:
+                        print(f'ejecutar_bot_programado - Error al ejecutar bot {bot[5]} :  {str(e)}')
             
         except Exception as e:  
-            log(f'ejecutar_bot_programado {str(e)} ERROR')
+            log('ejecutar_bot_programado',f'ejecutar_bot_programado {str(e)}' ,'ERROR')
 
     def auto_ejecucion():
         try:
@@ -473,6 +511,14 @@ while True:
             hilo_tiempo.start()
         except Exception as e:
             log('init_programacion_bots', str(e), 'ERROR')
+
+    ###Skype
+
+    def reporte_skype(id,msg):
+
+        slogin = Skype("cs009@skycellular.net","aztecaintvalentina2019")
+        contact = slogin.chats['19:15ded9b221e745c4831b6b1441cfb8bf@thread.skype']
+        contact.sendMsg(f'{msg} - Bot: {id}')
 
     try:
 
