@@ -18,7 +18,7 @@ hora_finalizacion = None
 
 while True:
 
-    ## Base de datos
+   ## Base de datos
     def init_db():
         conn = sqlite3.connect('Orquestador.db')
 
@@ -37,7 +37,8 @@ while True:
             viernes INTEGER NOT NULL,
             sabado INTEGER NOT NULL,
             domingo INTEGER NOT NULL,
-            last_run TEXT
+            last_run TEXT,
+            running INTEGER NOT NULL
         );
         ''')
         # Creación de la tabla "logs"
@@ -54,6 +55,31 @@ while True:
         cursor = conn.cursor()
 
         return cursor
+
+    def select_running_by_id(bot_id):
+        conn = sqlite3.connect('Orquestador.db')
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT running FROM bots WHERE id = ?', (bot_id,))
+        result = cursor.fetchone()
+
+        conn.close()
+
+        if result:
+            running = result[0]
+            return running
+        else:
+            return None
+
+    def update_running_by_id(bot_id, new_running_value):
+        conn = sqlite3.connect('Orquestador.db')
+        cursor = conn.cursor()
+
+        # Ejecutar la consulta de actualización
+        cursor.execute('UPDATE bots SET running = ? WHERE id = ?', (new_running_value, bot_id))
+
+        conn.commit()
+        conn.close()
 
     #Registro de log
     def log(name, mensaje, type):
@@ -81,7 +107,7 @@ while True:
             global tarjetas
             
             # Borra todos los widgets hijos de la ventana principalk
-            for widget in container.winfo_children():
+            for widget  in container.winfo_children():
                 widget.destroy()
 
             cursor.execute('SELECT * FROM bots')
@@ -112,9 +138,9 @@ while True:
             id = len(tarjetas) + 1
 
             cursor.execute('''
-            INSERT INTO bots (name, path, status, interval, lunes, martes, miercoles, jueves, viernes, sabado, domingo, last_run)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (f'Nuevo Bot {id}','c:/','Inactivo', 0, 0, 0, 0, 0, 0, 0, 0, "Sin ejecucion"))
+            INSERT INTO bots (name, path, status, interval, lunes, martes, miercoles, jueves, viernes, sabado, domingo, last_run, running)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (f'Nuevo Bot {id}','c:/','Inactivo', 0, 0, 0, 0, 0, 0, 0, 0, "Sin ejecucion", 0))
 
 
             cursor.connection.commit()
@@ -371,6 +397,7 @@ while True:
         try:
             hilo = threading.Thread(target=correr_bot, args=(id,path))
             hilo.start()
+
             
             log('ejecutar_bot_en_hilo', f'Ejecucion de Bot: {id} en Hilo: {hilo.ident}', 'CONFIG')
         except Exception as e:
@@ -380,16 +407,20 @@ while True:
     def correr_bot(id,path):
         try:
             hora_actual = time.strftime("%H:%M:%S")
+
             reporte_skype(id, f'Bot Ejecutado: {hora_actual}')
+            log('correr_bot', f'Ejecucion de Bot: {id}', 'EJECUCION')  
+            update_running_by_id(id, 1) 
+
             proceso = subprocess.Popen(path, shell=True)
             proceso.wait()  # Esperar a que el proceso termine
-            log('correr_bot', f'Ejecucion de Bot: {id}', 'EJECUCION')  
 
             global hora_finalizacion
 
             hora_actual = time.strftime("%H:%M:%S")
             hora_finalizacion = hora_actual
 
+            update_running_by_id(id, 0) 
             actualizar_last_run(id, hora_actual)
 
             log('correr_bot', f'Bot finalizado: {hora_actual} Bot {id}', 'FINALIZACION')
@@ -450,6 +481,7 @@ while True:
                 
                 program_day = today in dias_seleccionados
 
+
                 if program_day:
 
                     try: 
@@ -461,6 +493,7 @@ while True:
                         path = bot[4]
                         id = bot[5]
 
+                        running = select_running_by_id(id)  
 
                         def calculo_Ejecucion():
 
@@ -470,18 +503,21 @@ while True:
 
                                 ejecutar_bot_en_hilo(id,path)
 
-                        if hora_definida == 'Sin ejecucion':
-                            if status == 'Activo':
-                                print(f'Primera ejecucion bot: {nombre_bot}')
-                                ejecutar_bot_en_hilo(id,path)
+                        if not running:
+                            if hora_definida == 'Sin ejecucion':
+                                if status == 'Activo':
+                                    print(f'Primera ejecucion bot: {nombre_bot}')
+                                    ejecutar_bot_en_hilo(id,path)
+                                else:
+                                    pass
                             else:
-                                pass
+                                if status == 'Activo':
+                                    calculo_Ejecucion()
+                                else:
+                                    pass
                         else:
-                            if status == 'Activo':
-                                calculo_Ejecucion()
-                            else:
-                                pass
-                    
+                            print('Bot en ejecucion')
+
                     except Exception as e:
                         print(f'ejecutar_bot_programado - Error al ejecutar bot {bot[5]} :  {str(e)}')
             
